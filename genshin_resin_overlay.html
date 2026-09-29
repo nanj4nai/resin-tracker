@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Genshin Resin Overlay</title>
+
+  <style>
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    #box {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      min-width: 220px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: rgba(0, 0, 0, .62);
+      color: white;
+      text-shadow: 0 1px 2px #000;
+      box-sizing: border-box;
+    }
+
+    #resin {
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    #timer {
+      margin-top: 3px;
+      font-size: 14px;
+      opacity: .92;
+    }
+
+    #note {
+      margin-top: 2px;
+      font-size: 12px;
+      opacity: .72;
+    }
+
+    #resin {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .resin-icon {
+      width: 26px;
+      height: 26px;
+      object-fit: contain;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="box">
+
+    <div id="resin">
+      <img src="Item_Original_Resin.webp" class="resin-icon">
+      <span>0 / 200</span>
+    </div>
+
+    <div id="timer">
+      +1 resin in 08:00:00
+    </div>
+
+    <div id="note">
+      Full in 26:40:00
+    </div>
+
+  </div>
+
+  <script>
+
+    /* =====================================================
+       GENSHIN RESIN SETTINGS
+       ===================================================== */
+
+    const MAX_RESIN = 200;
+
+    // 1 Resin every 8 minutes
+    const REGEN_TIME = 8 * 60;
+
+    // Starting Resin
+    const START_RESIN = 0;
+
+    // Starting countdown until first Resin
+    const START_NEXT_TICK = REGEN_TIME;
+
+
+    /* =====================================================
+       TIMER VARIABLES
+       ===================================================== */
+
+    let resin = START_RESIN;
+
+    let nextTick = START_NEXT_TICK;
+
+    // 200 × 8 minutes = 26 hours 40 minutes
+    let fullTimer = MAX_RESIN * REGEN_TIME;
+
+    let running = false;
+
+    let last = performance.now();
+
+
+    /* =====================================================
+       TIME FORMAT
+       ===================================================== */
+
+    function fmt(s) {
+
+      s = Math.max(0, Math.floor(s));
+
+      const h = Math.floor(s / 3600);
+
+      const m = Math.floor((s % 3600) / 60);
+
+      const sec = s % 60;
+
+      return `${String(h).padStart(2, '0')}:` +
+        `${String(m).padStart(2, '0')}:` +
+        `${String(sec).padStart(2, '0')}`;
+    }
+
+
+    /* =====================================================
+       START / PAUSE
+       F8
+       ===================================================== */
+
+    function toggleTimer() {
+
+      if (resin >= MAX_RESIN) {
+        return;
+      }
+
+      running = !running;
+
+      last = performance.now();
+
+    }
+
+
+    /* =====================================================
+       RESET
+       F9
+       ===================================================== */
+
+    function resetTimer() {
+
+      running = false;
+
+      resin = 0;
+
+      nextTick = REGEN_TIME;
+
+      fullTimer = MAX_RESIN * REGEN_TIME;
+
+      last = performance.now();
+
+    }
+
+
+    /* =====================================================
+       ADD 1 RESIN
+       F10
+       ===================================================== */
+
+    function addResin() {
+
+      if (resin >= MAX_RESIN) {
+        return;
+      }
+
+      resin++;
+
+      /*
+        Adding Resin manually means we still keep
+        the 8-minute regeneration cycle going.
+      */
+
+      if (resin >= MAX_RESIN) {
+
+        resin = MAX_RESIN;
+
+        nextTick = 0;
+
+        fullTimer = 0;
+
+        running = false;
+
+      }
+    }
+
+
+    /* =====================================================
+       KEYBOARD CONTROLS
+       ===================================================== */
+
+    document.addEventListener("keydown", function (event) {
+
+      /*
+        F8 = Start / Pause
+      */
+
+      if (event.key === "F8") {
+
+        event.preventDefault();
+
+        toggleTimer();
+
+      }
+
+
+      /*
+        F9 = Reset
+      */
+
+      if (event.key === "F9") {
+
+        event.preventDefault();
+
+        resetTimer();
+
+      }
+
+
+      /*
+        F10 = Add 1 Resin
+      */
+
+      if (event.key === "F10") {
+
+        event.preventDefault();
+
+        addResin();
+
+      }
+
+    });
+
+
+    /* =====================================================
+       DISPLAY
+       ===================================================== */
+
+    function updateDisplay() {
+
+      document.getElementById("resin").innerHTML =
+        `<img src="Item_Original_Resin.webp" class="resin-icon">
+          <span>${resin} / ${MAX_RESIN}</span>`;
+
+
+      if (resin >= MAX_RESIN) {
+
+        document.getElementById("timer").textContent =
+          "FULL";
+
+        document.getElementById("note").textContent =
+          "Resin is full";
+
+      } else {
+
+        document.getElementById("timer").textContent =
+          `+1 resin in ${fmt(nextTick)}`;
+
+        document.getElementById("note").textContent =
+          `Full in ${fmt(fullTimer)}`;
+
+      }
+
+    }
+
+
+    /* =====================================================
+       TIMER LOOP
+       ===================================================== */
+
+    function update() {
+
+      const now = performance.now();
+
+      const dt = (now - last) / 1000;
+
+      last = now;
+
+
+      if (running && resin < MAX_RESIN) {
+
+        nextTick -= dt;
+
+        fullTimer -= dt;
+
+
+        /* -----------------------------------------------
+           Resin regeneration
+           ----------------------------------------------- */
+
+        if (nextTick <= 0) {
+
+          const gained =
+            Math.floor((-nextTick) / REGEN_TIME) + 1;
+
+          resin =
+            Math.min(MAX_RESIN, resin + gained);
+
+          nextTick += gained * REGEN_TIME;
+
+        }
+
+
+        /* -----------------------------------------------
+           Reached maximum
+           ----------------------------------------------- */
+
+        if (resin >= MAX_RESIN) {
+
+          resin = MAX_RESIN;
+
+          nextTick = 0;
+
+          fullTimer = 0;
+
+          running = false;
+
+        }
+
+      }
+
+
+      updateDisplay();
+
+      requestAnimationFrame(update);
+
+    }
+
+
+    update();
+
+  </script>
+
+</body>
+
+</html>

@@ -7,4 +7,4 @@ Manuals:
 3. Add 1 Resin: f10
 
 
-**Note: don't except much since it's made by AI you can debug it if you want but it still do its job**
+**Note: This is a simple fan-made tool created for my Genshin Impact experiment. It may have some bugs, but it gets the job done. Feel free to modify or improve it!b**
